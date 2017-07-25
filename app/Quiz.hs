@@ -2,90 +2,46 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
 import Text.Pandoc.JSON
+import Text.Pandoc.Walk
 import Control.Exception
 import Data.Monoid ((<>))
 import Data.List (partition)
 
 main :: IO ()
-main = toJSONFilter media
+main = toJSONFilter quizLift
 
-media :: Inline -> IO [Inline]
-media (Image ("audio",att,att') [] (filename,_))   = return $ [toHtml $ "<audio " <> unwords direct <> " src=\"" <> filename <> "\"" <> attToString ("",css,att') <> ">"]
-                                                                ++ [toHtml"</audio>"]
-                                                        where
-                                                                (direct, css) = classToPlain att
-media (Image ("audio",att,att') alt (filename,_))   = return $ [toHtml $ "<figure><audio " <> unwords direct <> " src=\"" <> filename <> "\"" <> attToString ("",css,att') <> "></audio>"]
-                                                                ++ [toHtml $ "<figcaption>"]
-                                                                ++ alt
-                                                                ++ [toHtml $ "</figcaption></figure>"]
-                                                        where
-                                                                (direct, css) = classToPlain att
---no description of video
-media (Image ("video", att, att') [] (filename,_))  = return $ [toHtml $ "<video " <> unwords direct <> " src=\"" <> filename <> "\"" <> attToString ("",css,att') <> "></video>"]
-                                                        where
-                                                                (direct, css) = classToPlain att
---with description of video
-media (Image ("video", att, att') alt (filename,_)) = return $ [toHtml $ "<figure>"]
-                                                                ++ [toHtml $ "<video " <> unwords direct <> " src=\"" <> filename <> "\"" <> attToString ("",css,att') <> "></video>"]
-                                                                ++ [toHtml $ "<figcaption>"]
-                                                                ++ alt
-                                                                ++ [toHtml $ "</figcaption></figure>"]
-                                                        where
-                                                                (direct, css) = classToPlain att
---no description of image
-media (Image ("img", att, att') [] (filename,_))  = return $ [toHtml $ "<figure>"]
-                                                              ++ [toHtml $ "<img " <> unwords direct <> " src=\"" <> filename <> "\"" <> attToString ("",css,att') <> "></img>"]
-                                                              ++ [toHtml $ "</figure>"]
-                                                        where
-                                                                (direct, css) = classToPlain att
---with description of image
-media (Image ("img", att, att') alt (filename,_)) = return $ [toHtml $ "<figure>"]
-                                                                ++ [toHtml $ "<img " <> unwords direct <> " src=\"" <> filename <> "\"" <> attToString ("",css,att') <> "></img>"]
-                                                                ++ [toHtml $ "<figcaption>"]
-                                                                ++ alt
-                                                                ++ [toHtml $ "</figcaption></figure>"]
-                                                        where
-                                                                (direct, css) = classToPlain att
-media (Image ("svg", att, att') [] (filename,_))  = handle (\(fileerror :: IOException) -> return [toHtml $ "Could not read file: " <> filename <> "<br />" <> show fileerror]) $
-                                                    do
-                                                        svg <- readFile filename
-                                                        return $ [toHtml $ "<figure " <> unwords direct <> " " <> attToString ("", css, att') <> ">"] -- use attributes on figure, as svg gets dumped in..
-                                                              ++ [toHtml $ svg]
-                                                              ++ [toHtml $ "</figure>"]
-                                                        where
-                                                                (direct, css) = classToPlain att
-media (Image ("svg", att, att') alt (filename,_))  = handle (\(fileerror :: IOException) -> return $ [toHtml $ "Could not read file: " <> filename <> "<br />" <> show filename]) $
-                                                     do
-                                                        svg <- readFile filename
-                                                        return $ [toHtml $ "<figure " <> unwords direct <> " " <> attToString ("", css, att') <> ">"] -- use attributes on figure, as svg gets dumped in..
-                                                              ++ [toHtml $ svg]
-                                                              ++ [toHtml $ "<figcaption>"]
-                                                              ++ alt
-                                                              ++ [toHtml $ "</figcaption></figure>"]
-                                                        where
-                                                                (direct, css) = classToPlain att
-media (Image ("demo", att, att') [] (filename,_))  = return $ [toHtml $ "<iframe " <> unwords direct <> " src=\"" <> filename <> "?plugin\"" <> attToString ("", css, att') <> "></iframe>"]
-                                                        where
-                                                                (direct, css) = classToPlain att
-media (Image ("demo", att, att') alt (filename,_))  = return $ [toHtml $ "<figure>"]
-                                                              ++ [toHtml $ "<iframe " <> unwords direct <> " src=\"" <> filename <> "?plugin\"" <> attToString ("", css, att') <> "></iframe>"]
-                                                              ++ [toHtml $ "<figcaption>"]
-                                                              ++ alt
-                                                              ++ [toHtml $ "</figcaption></figure>"]
-                                                        where
-                                                                (direct, css) = classToPlain att
+quizLift :: Block -> [Block]
+quizLift pb@(Plain b) = fmap makeQuiz (query findQuiz pb) ++ [Plain (filter ((==) [] . findQuiz) b)]
+quizLift pb@(Para  b) = fmap makeQuiz (query findQuiz pb) ++ [Plain (filter ((==) [] . findQuiz) b)]
+quizLift x = [x]
 
-media x = return [x]
+
+findQuiz :: Inline -> [(Attr, [Inline], Maybe [Inline])]
+findQuiz (Span attributes@(id, att, att') answerText)
+  | "answer" `elem` att     = [(attributes, answerText, Nothing)]
+findQuiz (Link attributes@(id, att, att') answerText (tooltip,_))
+  | "answer" `elem` att     = [(attributes, answerText, Just [toHtml tooltip])]
+findQuiz x = []
+
+makeQuiz :: (Attr, [Inline], Maybe [Inline]) -> Block
+makeQuiz (att, answer, Nothing) = Div att [Plain answer]
+makeQuiz (att, answer, Just tooltip) = Div att [Plain answer, Div ("",["tooltip"],[]) [Plain tooltip]]
+
+-- quiz :: Inline -> [Inline]
+-- quiz (Span attributes@(id, att, att') answerText)
+--   | "answer" `elem` att     = [toHtml $ "<div " <> attToString attributes <> ">"]
+--                               ++ answerText
+--                               ++ [toHtml $ "</div>"]
+-- quiz (Link attributes@(id, att, att') answerText (tooltip,_))
+--   | "answer" `elem` att     = [toHtml $ "<div " <> attToString attributes <> ">"]
+--                               ++ answerText
+--                               ++ [toHtml $ "<div class=\"tooltip\">" <> tooltip <> "</div>"]
+--                               ++ [toHtml $ "</div>"]
+-- quiz x = [x]
 
 
 attToString :: Attr -> String
 attToString (ident, classes, kvpairs) = ident <> " class=\"" <> unwords classes <> "\" " <> unwords ((\(k,v) -> k <> "=\"" <> v <> "\"") <$> kvpairs)
-
-classToPlain :: [String] -> ([String],[String])
-classToPlain = partition (`elem` [ "data-autoplay"
-                                 , "controls"
-                                 ]
-                         )
 
 toHtml :: String -> Inline
 toHtml = RawInline (Format "html")
