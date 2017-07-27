@@ -22,6 +22,8 @@ support for
 - `![](foo.png){#img}`
 - `![](foo.svg){#svg}`
 - `![](foo.html){#demo}`
+- Automatic detection of filetypes based on file-extensions
+  - Id's may be changed/omitted in this case
 
 ### Styling
 
