@@ -5,6 +5,7 @@ import Text.Pandoc.JSON
 import Control.Exception
 import Data.Monoid ((<>))
 import Data.List (partition, elem)
+import Data.Char (toLower)
 import System.FilePath
 
 main :: IO ()
@@ -12,29 +13,29 @@ main = toJSONFilter media
 
 -- | File-extensions that should be treated as audio
 audioExt :: [String]
-audioExt = [".mp3",".aac"]
+audioExt = ["mp3","aac"]
 
 -- | File-extensions that should be treated as video
 videoExt :: [String]
-videoExt = [ ".avi"
-           , ".mp4"
-           , ".mov"
+videoExt = [ "avi"
+           , "mp4"
+           , "mov"
            ]
 
 -- | File-extensions that should be treated as image
 imgExt :: [String]
 imgExt = 
-  [ ".jpg"
-  , ".jpeg"
-  , ".png"
-  , ".gif"
-  , ".tif"
-  , ".tiff"
-  , ".bmp"
+  [ "jpg"
+  , "jpeg"
+  , "png"
+  , "gif"
+  , "tif"
+  , "tiff"
+  , "bmp"
   ]
 
 -- | File-extensions that should be treated as demo and will be included
--- in an iframe.
+-- in an iframe
 demoExt :: [String]
 demoExt = ["html", "htm"]
 
@@ -57,12 +58,12 @@ demoExt = ["html", "htm"]
 media :: Inline -> IO [Inline]
 --audio
 media (Image (id',att,att') [] (filename,_))
-  | id' == "audio" || (takeExtension filename `elem` audioExt)
+  | id' == "audio" || (checkExtension filename audioExt)
     = return $ [toHtml $ "<audio " <> unwords direct <> " src=\"" <> filename <> "\"" <> attToString (idFilter "audio" id',css,att') <> "></audio>"]
       where
         (direct, css) = classToPlain att
 media (Image (id',att,att') alt (filename,_))
-  | id' == "audio" || (takeExtension filename `elem` audioExt)
+  | id' == "audio" || (checkExtension filename audioExt)
     = return $ [toHtml $ "<figure><audio " <> unwords direct <> " src=\"" <> filename <> "\"" <> attToString (idFilter "audio" id',css,att') <> "></audio>"]
             ++ [toHtml $ "<figcaption>"]
             ++ alt
@@ -71,12 +72,12 @@ media (Image (id',att,att') alt (filename,_))
         (direct, css) = classToPlain att
 --videos
 media (Image (id', att, att') [] (filename,_))
-  | id' == "video" || (takeExtension filename `elem` videoExt)
+  | id' == "video" || (checkExtension filename videoExt)
     = return $ [toHtml $ "<video " <> unwords direct <> " src=\"" <> filename <> "\"" <> attToString (idFilter "video" id',css,att') <> "></video>"]
       where
         (direct, css) = classToPlain att
 media (Image (id', att, att') alt (filename,_))
-  | id' == "video" || (takeExtension filename `elem` videoExt)
+  | id' == "video" || (checkExtension filename videoExt)
      = return $ [toHtml $ "<figure>"]
              ++ [toHtml $ "<video " <> unwords direct <> " src=\"" <> filename <> "\"" <> attToString (idFilter "video" id',css,att') <> "></video>"]
              ++ [toHtml $ "<figcaption>"]
@@ -86,14 +87,14 @@ media (Image (id', att, att') alt (filename,_))
          (direct, css) = classToPlain att
 --images
 media (Image (id', att, att') [] (filename,_))
-  | id' == "img" || (takeExtension filename `elem` imgExt)
+  | id' == "img" || (checkExtension filename imgExt)
     = return $ [toHtml $ "<figure>"]
             ++ [toHtml $ "<img " <> unwords direct <> " src=\"" <> filename <> "\"" <> attToString (idFilter "img" id',css,att') <> "></img>"]
             ++ [toHtml $ "</figure>"]
       where
         (direct, css) = classToPlain att
 media (Image (id', att, att') alt (filename,_))
-  | id' == "img" || (takeExtension filename `elem` imgExt)
+  | id' == "img" || (checkExtension filename imgExt)
     = return $ [toHtml $ "<figure>"]
             ++ [toHtml $ "<img " <> unwords direct <> " src=\"" <> filename <> "\"" <> attToString (idFilter "img" id',css,att') <> "></img>"]
             ++ [toHtml $ "<figcaption>"]
@@ -103,7 +104,7 @@ media (Image (id', att, att') alt (filename,_))
         (direct, css) = classToPlain att
 --load svg and dump it in
 media (Image (id', att, att') [] (filename,_))
-  | id' == "svg" || (takeExtension filename == ".svg")
+  | id' == "svg" || (checkExtension filename ["svg"])
     = handle (\(fileerror :: IOException) -> return [toHtml $ "Could not read file: " <> filename <> "<br />" <> show fileerror]) $
                 do
                   svg <- readFile filename
@@ -113,7 +114,7 @@ media (Image (id', att, att') [] (filename,_))
       where
         (direct, css) = classToPlain att
 media (Image (id', att, att') alt (filename,_))
-  | id' == "svg" || (takeExtension filename == ".svg")
+  | id' == "svg" || (checkExtension filename ["svg"])
     = handle (\(fileerror :: IOException) -> return $ [toHtml $ "Could not read file: " <> filename <> "<br />" <> show filename]) $
                 do
                   svg <- readFile filename
@@ -126,12 +127,12 @@ media (Image (id', att, att') alt (filename,_))
         (direct, css) = classToPlain att
 --html-demos etc. as IFrames
 media (Image (id', att, att') [] (filename,_))
-  | id' == "demo" || (takeExtension filename `elem` demoExt)
+  | id' == "demo" || (checkExtension filename demoExt)
     = return $ [toHtml $ "<iframe " <> unwords direct <> " src=\"" <> filename <> "?plugin\"" <> attToString (idFilter "demo" id', css, att') <> "></iframe>"]
       where
         (direct, css) = classToPlain att
 media (Image (id', att, att') alt (filename,_))
-  | id' == "demo" || (takeExtension filename `elem` demoExt)
+  | id' == "demo" || (checkExtension filename demoExt)
     = return $ [toHtml $ "<figure>"]
             ++ [toHtml $ "<iframe " <> unwords direct <> " src=\"" <> filename <> "?plugin\"" <> attToString (idFilter "demo" id', css, att') <> "></iframe>"]
             ++ [toHtml $ "<figcaption>"]
@@ -165,11 +166,13 @@ convertToStyle keys kvpairs = ("style", newstyle):rest
     rest        = filter (\(k,v) -> not $ k `elem` keys) kvpairs
     newstyle = concat ((\(k,v) -> k <> ":" <> v <> ";") <$> stylesToAdd) <> oldstyle
 
+checkExtension :: String -> [String] -> Bool
+checkExtension fn exts = (fmap toLower . tail . takeExtension) fn `elem` exts
 
 idFilter :: String -> String -> String
 idFilter a b
   | a == b    = ""
-  | otherwise = a
+  | otherwise = b
 
 classToPlain :: [String] -> ([String],[String])
 classToPlain = partition (`elem` [ "data-autoplay"
