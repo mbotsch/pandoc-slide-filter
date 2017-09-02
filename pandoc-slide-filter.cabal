@@ -19,7 +19,7 @@ executable media
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base
                      , pandoc-types
-                     , filepath
+                     , pandoc-slide-filter
   default-language:    Haskell2010
 
 executable cols
@@ -28,7 +28,7 @@ executable cols
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base
                      , pandoc-types
-                     , filepath
+                     , pandoc-slide-filter
   default-language:    Haskell2010
 
 executable styling
@@ -37,6 +37,7 @@ executable styling
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base
                      , pandoc-types
+                     , pandoc-slide-filter
   default-language:    Haskell2010
 
 executable quiz
@@ -45,6 +46,7 @@ executable quiz
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base
                      , pandoc-types
+                     , pandoc-slide-filter
   default-language:    Haskell2010
 
 executable clean
@@ -53,7 +55,20 @@ executable clean
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base
                      , pandoc-types
+                     , pandoc-slide-filter
   default-language:    Haskell2010
+
+library
+  hs-source-dirs:      src
+  build-depends:       base
+                     , pandoc-types
+                     , filepath
+  default-language:    Haskell2010
+  exposed-modules:     Text.Pandoc.Util.Filter
+                     , Text.Pandoc.Util.Filter.Cols
+                     , Text.Pandoc.Util.Filter.Media
+                     , Text.Pandoc.Util.Filter.Styling
+                     , Text.Pandoc.Util.Filter.Quiz
 
 source-repository head
   type:     git

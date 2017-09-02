@@ -2,9 +2,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
 import Text.Pandoc.JSON
-import Control.Exception
-import Data.Monoid ((<>))
-import Data.List (partition, isInfixOf)
 
 main :: IO ()
 main = toJSONFilter clean
