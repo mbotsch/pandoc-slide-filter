@@ -1,6 +1,8 @@
 module Text.Pandoc.Util.Filter
     ( attToString
+    , convertToStyle
     , revealjsSpecialAttrs
+    , revealjsRewriteAttr
     , classToRevealAttr
     , toHtml
     , toBlockHtml
@@ -45,14 +47,16 @@ attToString (id', classes, kvpairs) = "id=\"" <> id'  <> "\" class=\"" <> unword
   where
     kvpairs' = convertToStyle ["width","height","transform"] kvpairs
 
+-- | helper function for 'attToString', but can also be used
+--   if you want to extract styles from kv-pair
 convertToStyle :: [String] -> [(String,String)] -> [(String,String)]
 convertToStyle keys kvpairs = ("style", newstyle):rest
   where
     oldstyle = case filter (\(k,_) -> k == "style") kvpairs of
                  [(_,st)] -> st
                  _        -> ""
-    stylesToAdd = filter (\(k,_) -> k    `elem` keys) kvpairs
-    rest        = filter (\(k,_) -> k `notElem` keys) kvpairs
+    stylesToAdd = filter (\(k,_) -> k    `elem`          keys)  kvpairs
+    rest        = filter (\(k,_) -> k `notElem` ("style":keys)) kvpairs
     newstyle = concat ((\(k,v) -> k <> ":" <> v <> ";") <$> stylesToAdd) <> oldstyle
 
 -- | revealjs has some special attributes that has to be
@@ -87,6 +91,21 @@ revealjsSpecialAttrs =
 --   into real classes and 'revealjsSpecialAttrs'
 classToRevealAttr :: [String] -> ([String],[String])
 classToRevealAttr = partition (`elem` revealjsSpecialAttrs)
+
+-- | HTML allows for some attributes (i.e. autoplay)
+--   for which revealjs offers a special version
+--   (i.e. only autoplaying on active slide).
+--   These are the things that get rewritten
+revealjsRewriteAttr :: [String] -> [String]
+revealjsRewriteAttr = fmap replace
+  where
+    replace :: String -> String
+    replace a = case filter ((==a) . fst) replacements of
+                  [(_,b)] -> b
+                  _       -> a
+    replacements :: [(String, String)]
+    replacements = [ ("autoplay", "data-autoplay")
+                   ]
 
 -- | small wrapper around @RawInline (Format "html")@
 --   as this is less line-noise in the filters and the

@@ -4,11 +4,12 @@ module Text.Pandoc.Util.Filter.Media
     (media)
         where
 
-import Text.Pandoc.JSON
 import Control.Exception
-import Data.Monoid ((<>))
 import Data.Char (toLower)
+import Data.List (intercalate)
+import Data.Monoid ((<>))
 import System.FilePath
+import Text.Pandoc.JSON
 
 import Text.Pandoc.Util.Filter
 
@@ -66,47 +67,31 @@ media (Image (id',att,att') [] (filename,_))
   | id' == "audio" || checkExtension filename audioExt
     = return $ [toHtml $ "<audio " <> unwords direct <> " src=\"" <> filename <> "\"" <> attToString (idFilter "audio" id',css,att') <> "></audio>"]
       where
-        (direct, css) = classToRevealAttr att
+        (direct, css) = (classToRevealAttr . revealjsRewriteAttr) att
 media (Image (id',att,att') alt (filename,_))
   | id' == "audio" || checkExtension filename audioExt
-    = return $ [toHtml $ "<figure><audio " <> unwords direct <> " src=\"" <> filename <> "\"" <> attToString (idFilter "audio" id',css,att') <> "></audio>"]
+    = return $ [toHtml $ "<figure " <> attToString(idFilter "audio" id', css, att') <> "><audio " <> unwords direct <> " src=\"" <> filename <> "\"></audio>"]
             <> [toHtml $ "<figcaption>"]
             <> alt
             <> [toHtml $ "</figcaption></figure>"]
       where
-        (direct, css) = classToRevealAttr att
+        (direct, css) = (classToRevealAttr . revealjsRewriteAttr) att
 --videos
 media (Image (id', att, att') [] (filename,_))
   | id' == "video" || checkExtension filename videoExt
     = return $ [toHtml $ "<video " <> unwords direct <> " src=\"" <> filename <> "\"" <> attToString (idFilter "video" id',css,att') <> "></video>"]
       where
-        (direct, css) = classToRevealAttr att
+        (direct, css) = (classToRevealAttr . revealjsRewriteAttr) att
 media (Image (id', att, att') alt (filename,_))
   | id' == "video" || checkExtension filename videoExt
-     = return $ [toHtml $ "<figure>"]
-             <> [toHtml $ "<video " <> unwords direct <> " src=\"" <> filename <> "\"" <> attToString (idFilter "video" id',css,att') <> "></video>"]
+     = return $ [toHtml $ "<figure " <> attToString (idFilter "video" id',css,att') <> ">"]
+             <> [toHtml $ "<video " <> unwords direct <> " src=\"" <> filename <> "\" style=\"" <> style <> "\"></video>"]
              <> [toHtml $ "<figcaption>"]
              <> alt
              <> [toHtml $ "</figcaption></figure>"]
        where
-         (direct, css) = classToRevealAttr att
---images
-media (Image (id', att, att') [] (filename,_))
-  | id' == "img" || checkExtension filename imgExt
-    = return $ [toHtml $ "<figure>"]
-            <> [toHtml $ "<img " <> unwords direct <> " src=\"" <> filename <> "\"" <> attToString (idFilter "img" id',css,att') <> "></img>"]
-            <> [toHtml $ "</figure>"]
-      where
-        (direct, css) = classToRevealAttr att
-media (Image (id', att, att') alt (filename,_))
-  | id' == "img" || checkExtension filename imgExt
-    = return $ [toHtml $ "<figure>"]
-            <> [toHtml $ "<img " <> unwords direct <> " src=\"" <> filename <> "\"" <> attToString (idFilter "img" id',css,att') <> "></img>"]
-            <> [toHtml $ "<figcaption>"]
-            <> alt
-            <> [toHtml $ "</figcaption></figure>"]
-      where
-        (direct, css) = classToRevealAttr att
+         (direct, css) = (classToRevealAttr . revealjsRewriteAttr) att
+         style = filterStyle att'
 --load svg and dump it in
 media (Image (id', att, att') [] (filename,_))
   | id' == "svg"
@@ -117,7 +102,7 @@ media (Image (id', att, att') [] (filename,_))
                         <> [toHtml $ svg]
                         <> [toHtml $ "</figure>"]
       where
-        (direct, css) = classToRevealAttr att
+        (direct, css) = (classToRevealAttr . revealjsRewriteAttr) att
 media (Image (id', att, att') alt (filename,_))
   | id' == "svg"
     = handle (\(fileerror :: IOException) -> return [toHtml $ "Could not read file: " <> filename <> "<br />" <> show fileerror]) $
@@ -129,22 +114,41 @@ media (Image (id', att, att') alt (filename,_))
                         <> alt
                         <> [toHtml $ "</figcaption></figure>"]
       where
-        (direct, css) = classToRevealAttr att
+        (direct, css) = (classToRevealAttr . revealjsRewriteAttr) att
+--images
+media (Image (id', att, att') [] (filename,_))
+  | id' == "img" || checkExtension filename imgExt
+    = return $ [toHtml $ "<figure " <> attToString (idFilter "img" id',css,att') <> ">"]
+            <> [toHtml $ "<img " <> unwords direct <> " src=\"" <> filename <> "\" style=\"" <> style <> "\"></img>"]
+            <> [toHtml $ "</figure>"]
+      where
+        (direct, css) = (classToRevealAttr . revealjsRewriteAttr) att
+        style = filterStyle att'
+media (Image (id', att, att') alt (filename,_))
+  | id' == "img" || checkExtension filename imgExt
+    = return $ [toHtml $ "<figure " <> attToString (idFilter "img" id',css,att') <> ">"]
+            <> [toHtml $ "<img " <> unwords direct <> " src=\"" <> filename <> "\" style=\"" <> style <> "\"></img>"]
+            <> [toHtml $ "<figcaption>"]
+            <> alt
+            <> [toHtml $ "</figcaption></figure>"]
+      where
+        (direct, css) = (classToRevealAttr . revealjsRewriteAttr) att
+        style = filterStyle att'
 --html-demos etc. as IFrames
 media (Image (id', att, att') [] (filename,_))
   | id' == "demo" || checkExtension filename demoExt
     = return [toHtml $ "<iframe " <> unwords direct <> " src=\"" <> filename <> "?plugin\"" <> attToString (idFilter "demo" id', css, att') <> "></iframe>"]
       where
-        (direct, css) = classToRevealAttr att
+        (direct, css) = (classToRevealAttr . revealjsRewriteAttr) att
 media (Image (id', att, att') alt (filename,_))
   | id' == "demo" || checkExtension filename demoExt
-    = return $ [toHtml $ "<figure>"]
-            <> [toHtml $ "<iframe " <> unwords direct <> " src=\"" <> filename <> "?plugin\"" <> attToString (idFilter "demo" id', css, att') <> "></iframe>"]
+    = return $ [toHtml $ "<figure " <> attToString (idFilter "demo" id', css, att') <> ">"]
+            <> [toHtml $ "<iframe " <> unwords direct <> " src=\"" <> filename <> "?plugin\"></iframe>"]
             <> [toHtml $ "<figcaption>"]
             <> alt
             <> [toHtml $ "</figcaption></figure>"]
       where
-        (direct, css) = classToRevealAttr att
+        (direct, css) = (classToRevealAttr . revealjsRewriteAttr) att
 -- if not matched
 media x = return [x]
 
@@ -156,3 +160,7 @@ idFilter a b
   | a == b    = ""
   | otherwise = b
 
+filterStyle :: [(String,String)] -> String
+filterStyle kvpairs = case filter ((== "style") . fst) (convertToStyle ["width","height"] kvpairs) of
+                  [] -> ""
+                  as -> intercalate ";" $ snd <$> as
