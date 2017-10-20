@@ -75,4 +75,4 @@ makeDiv :: Int -> Block -> Block
 makeDiv width content = Div ("", [], [("style","width:" <> show width <> "%;float:left")]) [content]
 
 clearDiv :: Block
-clearDiv = Div ("", [], [("style", "clear: both")]) [Plain [toHtml "&nbsp;"]]
+clearDiv = Div ("", [], [("style", "clear: both")]) [Plain [toHtml ""]]
