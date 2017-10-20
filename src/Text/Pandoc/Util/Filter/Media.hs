@@ -44,6 +44,11 @@ imgExt =
 demoExt :: [String]
 demoExt = ["html", "htm"]
 
+-- | File-extensions that should be treated as 3D model and will be shown with Mario's viewer
+-- in an iframe
+meshExt :: [String]
+meshExt = ["off", "obj", "stl"]
+
 -- | main media-plugin.
 --
 -- Will convert the following syntax
@@ -134,16 +139,31 @@ media (Image (id', att, att') alt (filename,_))
       where
         (direct, css) = (classToRevealAttr . revealjsRewriteAttr) att
         style = filterStyle att'
---html-demos etc. as IFrames
+--html-demos etc. as IFrames (use data-src instead of src to enable lazy-loading)
 media (Image (id', att, att') [] (filename,_))
   | id' == "demo" || checkExtension filename demoExt
-    = return [toHtml $ "<iframe " <> unwords direct <> " src=\"" <> filename <> "?plugin\"" <> attToString (idFilter "demo" id', css, att') <> "></iframe>"]
+    = return [toHtml $ "<iframe " <> unwords direct <> " data-src=\"" <> filename <> "?plugin\" scrolling=\"no\"" <> attToString (idFilter "demo" id', css, att') <> "></iframe>"]
       where
         (direct, css) = (classToRevealAttr . revealjsRewriteAttr) att
 media (Image (id', att, att') alt (filename,_))
   | id' == "demo" || checkExtension filename demoExt
     = return $ [toHtml $ "<figure " <> attToString (idFilter "demo" id', css, att') <> ">"]
-            <> [toHtml $ "<iframe " <> unwords direct <> " src=\"" <> filename <> "?plugin\"></iframe>"]
+            <> [toHtml $ "<iframe " <> unwords direct <> " data-src=\"" <> filename <> "?plugin\" scrolling=\"no\"></iframe>"]
+            <> [toHtml $ "<figcaption>"]
+            <> alt
+            <> [toHtml $ "</figcaption></figure>"]
+      where
+        (direct, css) = (classToRevealAttr . revealjsRewriteAttr) att
+--3D meshes shown in a WebGL viewer in an iframe (use data-src to enable reveal's lazy loading)
+media (Image (id', att, att') [] (filename,_))
+  | checkExtension filename meshExt
+    = return [toHtml $ "<iframe " <> unwords direct <> " data-src=\"demos/mview/mview.html?model=../../" <> filename <> "\"" <> attToString (id', css, att') <> "></iframe>"]
+      where
+        (direct, css) = (classToRevealAttr . revealjsRewriteAttr) att
+media (Image (id', att, att') alt (filename,_))
+  | checkExtension filename meshExt
+    = return $ [toHtml $ "<figure " <> attToString (id', css, att') <> ">"]
+            <> [toHtml $ "<iframe " <> unwords direct <> " data-src=\"demos/mview/mview.html?model=../../" <> filename <> "\"" <> attToString (id', css, att') <> "></iframe>"]
             <> [toHtml $ "<figcaption>"]
             <> alt
             <> [toHtml $ "</figcaption></figure>"]
