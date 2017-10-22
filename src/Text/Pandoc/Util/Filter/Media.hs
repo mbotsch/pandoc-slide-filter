@@ -139,21 +139,25 @@ media (Image (id', att, att') alt (filename,_))
       where
         (direct, css) = (classToRevealAttr . revealjsRewriteAttr) att
         style = filterStyle att'
+
+
 --html-demos etc. as IFrames (use data-src instead of src to enable lazy-loading)
 media (Image (id', att, att') [] (filename,_))
   | id' == "demo" || checkExtension filename demoExt
-    = return [toHtml $ "<iframe " <> unwords direct <> " data-src=\"" <> filename <> "?plugin\" scrolling=\"no\"" <> attToString (idFilter "demo" id', css, att') <> "></iframe>"]
+    = return [toHtml $ "<iframe " <> unwords direct <> " data-src=\"" <> filename <> "\" scrolling=\"no\"" <> attToString (idFilter "demo" id', css, att') <> "></iframe>"]
       where
         (direct, css) = (classToRevealAttr . revealjsRewriteAttr) att
 media (Image (id', att, att') alt (filename,_))
   | id' == "demo" || checkExtension filename demoExt
     = return $ [toHtml $ "<figure " <> attToString (idFilter "demo" id', css, att') <> ">"]
-            <> [toHtml $ "<iframe " <> unwords direct <> " data-src=\"" <> filename <> "?plugin\" scrolling=\"no\"></iframe>"]
+            <> [toHtml $ "<iframe " <> unwords direct <> " data-src=\"" <> filename <> "\"" <> attToString (idFilter "demo" id', css, att') <> " scrolling=\"no\"></iframe>"]
             <> [toHtml $ "<figcaption>"]
             <> alt
             <> [toHtml $ "</figcaption></figure>"]
       where
         (direct, css) = (classToRevealAttr . revealjsRewriteAttr) att
+
+
 --3D meshes shown in a WebGL viewer in an iframe (use data-src to enable reveal's lazy loading)
 media (Image (id', att, att') [] (filename,_))
   | checkExtension filename meshExt
@@ -169,11 +173,16 @@ media (Image (id', att, att') alt (filename,_))
             <> [toHtml $ "</figcaption></figure>"]
       where
         (direct, css) = (classToRevealAttr . revealjsRewriteAttr) att
+
+
+
 -- if not matched
 media x = return [x]
 
+-- return filename extension (strip additional arguments from HTML URLs)
 checkExtension :: String -> [String] -> Bool
-checkExtension fn exts = (fmap toLower . tail . takeExtension) fn `elem` exts
+checkExtension fn exts = (fmap toLower . tail . takeExtension . takeWhile (/='?')) fn `elem` exts
+-- checkExtension fn exts = (fmap toLower . tail . takeExtension) fn `elem` exts
 
 idFilter :: String -> String -> String
 idFilter a b
