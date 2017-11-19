@@ -80,6 +80,7 @@ revealjsSpecialAttrs =
     , "data-noescape"
     , "data-ignore"
     , "controls"
+    , "loop"
     ]
 
 -- | revealjs has some special attributes that has to be
