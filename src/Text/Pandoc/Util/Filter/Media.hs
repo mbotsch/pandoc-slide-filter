@@ -42,7 +42,7 @@ imgExt =
 -- | File-extensions that should be treated as demo and will be included
 -- in an iframe
 demoExt :: [String]
-demoExt = ["html", "htm"]
+demoExt = ["html", "htm", "php"]
 
 -- | File-extensions that should be treated as 3D model and will be shown with Mario's viewer
 -- in an iframe
@@ -67,6 +67,8 @@ meshExt = ["off", "obj", "stl"]
 -- will be preserved.
 --
 media :: Inline -> IO [Inline]
+
+
 --audio
 media (Image (id',att,att') [] (filename,_))
   | id' == "audio" || checkExtension filename audioExt
@@ -81,6 +83,8 @@ media (Image (id',att,att') alt (filename,_))
             <> [toHtml $ "</figcaption></figure>"]
       where
         (direct, css) = (classToRevealAttr . revealjsRewriteAttr) att
+
+
 --videos
 media (Image (id', att, att') [] (filename,_))
   | id' == "video" || checkExtension filename videoExt
@@ -97,6 +101,8 @@ media (Image (id', att, att') alt (filename,_))
        where
          (direct, css) = (classToRevealAttr . revealjsRewriteAttr) att
          style = filterStyle att'
+
+
 --load svg and dump it in
 media (Image (id', att, att') [] (filename,_))
   | id' == "svg"
@@ -120,12 +126,12 @@ media (Image (id', att, att') alt (filename,_))
                         <> [toHtml $ "</figcaption></figure>"]
       where
         (direct, css) = (classToRevealAttr . revealjsRewriteAttr) att
+
+
 --images
 media (Image (id', att, att') [] (filename,_))
   | id' == "img" || checkExtension filename imgExt
-    = return $ [toHtml $ "<figure " <> attToString (idFilter "img" id',css,att') <> ">"]
-            <> [toHtml $ "<img " <> unwords direct <> " src=\"" <> filename <> "\" style=\"" <> style <> "\"></img>"]
-            <> [toHtml $ "</figure>"]
+    = return $ [toHtml $ "<img " <> unwords direct <> " src=\"" <> filename <> "\" style=\"" <> style <> "\"></img>"]
       where
         (direct, css) = (classToRevealAttr . revealjsRewriteAttr) att
         style = filterStyle att'
@@ -144,13 +150,13 @@ media (Image (id', att, att') alt (filename,_))
 --html-demos etc. as IFrames (use data-src instead of src to enable lazy-loading)
 media (Image (id', att, att') [] (filename,_))
   | id' == "demo" || checkExtension filename demoExt
-    = return [toHtml $ "<iframe " <> unwords direct <> " data-src=\"" <> filename <> "\" scrolling=\"no\"" <> attToString (idFilter "demo" id', css, att') <> "></iframe>"]
+    = return [toHtml $ "<iframe " <> unwords direct <> " data-src=\"" <> filename <> "\" " <> attToString (idFilter "demo" id', css, att') <> "></iframe>"]
       where
         (direct, css) = (classToRevealAttr . revealjsRewriteAttr) att
 media (Image (id', att, att') alt (filename,_))
   | id' == "demo" || checkExtension filename demoExt
     = return $ [toHtml $ "<figure " <> attToString (idFilter "demo" id', css, att') <> ">"]
-            <> [toHtml $ "<iframe " <> unwords direct <> " data-src=\"" <> filename <> "\"" <> attToString (idFilter "demo" id', css, att') <> " scrolling=\"no\"></iframe>"]
+            <> [toHtml $ "<iframe " <> unwords direct <> " data-src=\"" <> filename <> "\"" <> attToString (idFilter "demo" id', css, att') <> " ></iframe>"]
             <> [toHtml $ "<figcaption>"]
             <> alt
             <> [toHtml $ "</figcaption></figure>"]
@@ -178,6 +184,7 @@ media (Image (id', att, att') alt (filename,_))
 
 -- if not matched
 media x = return [x]
+
 
 -- return filename extension (strip additional arguments from HTML URLs)
 checkExtension :: String -> [String] -> Bool
