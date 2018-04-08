@@ -131,7 +131,7 @@ media (Image (id', att, att') alt (filename,_))
 --images
 media (Image (id', att, att') [] (filename,_))
   | id' == "img" || checkExtension filename imgExt
-    = return $ [toHtml $ "<img " <> unwords direct <> " src=\"" <> filename <> "\" style=\"" <> style <> "\"></img>"]
+    = return $ [toHtml $ "<img " <> attToString (idFilter "img" id',css,att') <> unwords direct <> " src=\"" <> filename <> "\" style=\"" <> style <> "\"></img>"]
       where
         (direct, css) = (classToRevealAttr . revealjsRewriteAttr) att
         style = filterStyle att'

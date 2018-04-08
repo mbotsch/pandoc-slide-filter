@@ -81,6 +81,7 @@ revealjsSpecialAttrs =
     , "data-ignore"
     , "controls"
     , "loop"
+    , "muted"
     ]
 
 -- | revealjs has some special attributes that has to be
