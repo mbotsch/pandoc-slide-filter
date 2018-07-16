@@ -12,7 +12,7 @@ import Text.Pandoc.Util.Filter.Styling
 
 main :: IO ()
 main = toJSONFilter $
-    fmap (walk (concatMap quiz) :: Pandoc -> Pandoc) .
+    fmap (walk (concatMap clean) :: Pandoc -> Pandoc) .
     (walkM (fmap concat . mapM styling) :: Pandoc -> IO Pandoc) <=<
     (walkM (fmap concat . mapM media) :: Pandoc -> IO Pandoc) .
     (walk (concatMap quiz) :: Pandoc -> Pandoc) .
