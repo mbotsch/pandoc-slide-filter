@@ -17,37 +17,41 @@ import Text.Pandoc.Util.Filter
 
 -- | File-extensions that should be treated as audio
 audioExt :: [String]
-audioExt = ["mp3","aac"]
+audioExt = [".mp3", ".aac"]
 
 -- | File-extensions that should be treated as video
 videoExt :: [String]
-videoExt = [ "avi"
-           , "mp4"
-           , "mov"
+videoExt = [ ".avi"
+           , ".mp4"
+           , ".mov"
            ]
 
 -- | File-extensions that should be treated as image
 imgExt :: [String]
 imgExt = 
-  [ "jpg"
-  , "jpeg"
-  , "png"
-  , "gif"
-  , "tif"
-  , "tiff"
-  , "bmp"
-  , "svg"
+  [ ".jpg"
+  , ".jpeg"
+  , ".png"
+  , ".gif"
+  , ".tif"
+  , ".tiff"
+  , ".bmp"
+  , ".svg"
   ]
+
+-- | File-extensions that should be treated as PDF
+pdfExt :: [String]
+pdfExt = [".pdf"]
 
 -- | File-extensions that should be treated as demo and will be included
 -- in an iframe
 demoExt :: [String]
-demoExt = ["html", "htm", "php"]
+demoExt = [".html", ".htm", ".php"]
 
 -- | File-extensions that should be treated as 3D model and will be shown with Mario's viewer
 -- in an iframe
 meshExt :: [String]
-meshExt = ["off", "obj", "stl"]
+meshExt = [".off", ".obj", ".stl", ".pmp"]
 
 -- | main media-plugin.
 --
@@ -147,6 +151,25 @@ media (Image (id', att, att') alt (filename,_))
         style = filterStyle att'
 
 
+--PDF
+media (Image (id', att, att') [] (filename,_))
+  | id' == "pdf" || checkExtension filename pdfExt
+    = return $ [toHtml $ "<embed " <> attToString (idFilter "pdf" id',css,att') <> unwords direct <> " src=\"" <> filename <> "\" style=\"" <> style <> "\">"]
+      where
+        (direct, css) = (classToRevealAttr . revealjsRewriteAttr) att
+        style = filterStyle att'
+media (Image (id', att, att') alt (filename,_))
+  | id' == "pdf" || checkExtension filename imgExt
+    = return $ [toHtml $ "<figure " <> attToString (idFilter "pdf" id',css,att') <> ">"]
+            <> [toHtml $ "<embed " <> unwords direct <> " src=\"" <> filename <> "\" style=\"" <> style <> "\">"]
+            <> [toHtml $ "<figcaption>"]
+            <> alt
+            <> [toHtml $ "</figcaption></figure>"]
+      where
+        (direct, css) = (classToRevealAttr . revealjsRewriteAttr) att
+        style = filterStyle att'
+
+
 --html-demos etc. as IFrames (use data-src instead of src to enable lazy-loading)
 media (Image (id', att, att') [] (filename,_))
   | id' == "demo" || checkExtension filename demoExt
@@ -188,8 +211,8 @@ media x = return [x]
 
 -- return filename extension (strip additional arguments from HTML URLs)
 checkExtension :: String -> [String] -> Bool
-checkExtension fn exts = (fmap toLower . tail . takeExtension . takeWhile (/='?')) fn `elem` exts
--- checkExtension fn exts = (fmap toLower . tail . takeExtension) fn `elem` exts
+checkExtension fn exts = (fmap toLower . takeExtension . takeWhile (/='?')) fn `elem` exts
+-- checkExtension fn exts = (fmap toLower . takeExtension) fn `elem` exts
 
 idFilter :: String -> String -> String
 idFilter a b
