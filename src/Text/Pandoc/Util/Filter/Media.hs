@@ -190,13 +190,13 @@ media (Image (id', att, att') alt (filename,_))
 --3D meshes shown in a WebGL viewer in an iframe (use data-src to enable reveal's lazy loading)
 media (Image (id', att, att') [] (filename,_))
   | checkExtension filename meshExt
-    = return [toHtml $ "<iframe " <> unwords direct <> " data-src=\"demos/mview/mview.html?model=../../" <> filename <> "\"" <> attToString (id', css, att') <> "></iframe>"]
+    = return [toHtml $ "<iframe " <> unwords direct <> " data-src=\"revealSlides/mview/mview.html?model=../../" <> filename <> "\"" <> attToString (id', css, att') <> "></iframe>"]
       where
         (direct, css) = (classToRevealAttr . revealjsRewriteAttr) att
 media (Image (id', att, att') alt (filename,_))
   | checkExtension filename meshExt
     = return $ [toHtml $ "<figure " <> attToString (id', css, att') <> ">"]
-            <> [toHtml $ "<iframe " <> unwords direct <> " data-src=\"demos/mview/mview.html?model=../../" <> filename <> "\"" <> attToString (id', css, att') <> "></iframe>"]
+            <> [toHtml $ "<iframe " <> unwords direct <> " data-src=\"revealSlides/mview/mview.html?model=../../" <> filename <> "\"" <> attToString (id', css, att') <> "></iframe>"]
             <> [toHtml $ "<figcaption>"]
             <> alt
             <> [toHtml $ "</figcaption></figure>"]
